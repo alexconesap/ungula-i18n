@@ -22,7 +22,7 @@ from PIL import ImageFont, Image, ImageDraw
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
-I18N_DIR = os.path.join(PROJECT_DIR, "..", "ungula-libraries", "lib_i18n", "src", "i18n_engine", "fonts")
+I18N_DIR = os.path.join(PROJECT_DIR, "src", "i18n_engine", "fonts")
 
 # System CJK font (macOS Hiragino Sans GB covers both CN and JP)
 FONT_PATH = "/System/Library/Fonts/Hiragino Sans GB.ttc"
