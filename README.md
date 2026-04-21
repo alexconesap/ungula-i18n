@@ -1,0 +1,271 @@
+# UngulaI18n
+
+> **High-performance embedded C++ libraries for ESP32, STM32 and other MCUs** — lightweight i18n framework for embedded UIs.
+
+A small i18n library for embedded projects. Lets you add multi-language support without hardcoding language strings or dealing with UTF-8 encodings in your application code.
+
+The library handles:
+
+- Language registration and switching
+- String lookup by numeric (enum based) index
+- Built-in language display names (in their own script)
+- Per-language vertical text offset for font baseline correction
+
+Your project provides the translated string tables. The library provides the engine.
+
+Use the library in this simple way (Arduino style example):
+
+```cpp
+Serial.println(
+  str(StringId::BTN_START)
+);
+```
+
+## How it works
+
+Each project defines its own set of string IDs (an enum) and a translation table per language (a `const char*` array). At boot, you register to the library which languages your project supports. The library stores the tables and serves strings based on the active language.
+
+```text
+Your project                          lib_i18n
+┌────────────────────────┐            ┌─────────────────────┐
+│ StringId enum          │            │ addLanguage()       │
+│ strings_en[] = {...}   │──register──│ setLanguage()       │
+│ strings_es[] = {...}   │            │ str(index) → text   │
+│ strings_cn[] = {...}   │            │ languageName(idx)   │
+└────────────────────────┘            └─────────────────────┘
+```
+
+## Quick example
+
+Say your project has two translatable strings: "START" and "STOP".
+
+### 1. Define your string IDs
+
+```cpp
+// Example file: my_strings.h
+#pragma once
+#include <i18n_engine/i18n.h>
+
+enum class StringId : uint16_t {
+  BTN_START = 0,
+  BTN_STOP,
+  STRING_COUNT
+};
+
+// Convenience wrapper — avoids casting from your own enum to the int everywhere
+inline const char* str(StringId sid) {
+  return i18n::str(static_cast<uint16_t>(sid));
+}
+```
+
+### 2. Write the translation tables
+
+```cpp
+// strings_en.h
+#pragma once
+#include "my_strings.h"
+
+static const char* const strings_en[] = {
+    /* BTN_START */ "START",
+    /* BTN_STOP  */ "STOP",
+};
+
+// strings_es.h
+#pragma once
+#include "my_strings.h"
+
+static const char* const strings_es[] = {
+    /* BTN_START */ "INICIAR",
+    /* BTN_STOP  */ "PARAR",
+};
+
+// strings_cn.h
+#pragma once
+#include "my_strings.h"
+
+static const char* const strings_cn[] = {
+    /* BTN_START */ "\xe5\xbc\x80\xe5\xa7\x8b",  // 开始
+    /* BTN_STOP  */ "\xe5\x81\x9c\xe6\xad\xa2",  // 停止
+};
+```
+
+Each array must have exactly `STRING_COUNT` entries, in the same order as the enum. To keep the same exact order in all your languages depends entirely on you.
+
+A `static_assert` in each file is a good safety net:
+
+```cpp
+static_assert(sizeof(strings_en) / sizeof(strings_en[0]) == static_cast<size_t>(StringId::STRING_COUNT),
+              "strings_en size mismatch");
+```
+
+### 3. Register languages at boot
+
+```cpp
+// i18n_config.cpp
+#include "my_strings.h"
+#include "strings_en.h"
+#include "strings_es.h"
+#include "strings_cn.h"
+
+static constexpr uint16_t N = static_cast<uint16_t>(StringId::STRING_COUNT);
+
+void setup_languages() {
+  i18n::addLanguage(i18n::Lang::English, strings_en, N);
+  i18n::addLanguage(i18n::Lang::Spanish, strings_es, N, -3);  // -3px vertical offset
+  i18n::addLanguage(i18n::Lang::Chinese, strings_cn, N);
+}
+```
+
+The registration order defines the language index: English=0, Spanish=1, Chinese=2. This is what you pass to `setLanguage()` and what the settings UI iterates over.
+
+You only register the languages your project needs. If you don't need Japanese, don't register it — it won't appear.
+
+### 4. Use it
+
+Arduino example:
+
+```cpp
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) {
+    // Do nothing. Just wait for Serial to be ready.
+  }
+  delay(200);  // Allow time for Serial to stabilize
+
+  setup_languages();
+  i18n::setLanguage(0);  // start in English (or store it in your device's NVS)
+}
+
+void printStuff() {
+  Serial.println(str(StringId::BTN_START));
+  Serial.println(str(StringId::BTN_STOP));
+}
+
+void onLanguageChanged(uint8_t newLang) {
+  i18n::setLanguage(newLang);
+  printStuff(); // now shows the labels based on currently setup language
+}
+```
+
+## Language names
+
+The library knows the display name of every supported language in its own script. You never need to deal with hex-encoded UTF-8 strings for language names:
+
+```cpp
+i18n::langName(i18n::Lang::English);     // "English"
+i18n::langName(i18n::Lang::Chinese);     // "中文"
+i18n::langName(i18n::Lang::Spanish);     // "Español"
+i18n::langName(i18n::Lang::Vietnamese);  // "Tiếng Việt"
+i18n::langName(i18n::Lang::Japanese);    // "日本語"
+```
+
+For registered languages, use the index-based version:
+
+```cpp
+for (uint8_t i = 0; i < i18n::languageCount(); ++i) {
+  drawLanguageButton(i, i18n::languageName(i));
+}
+```
+
+## Vertical text offset
+
+When mixing font sources (e.g., Adafruit GFX for English, U8g2 for CJK), the text baseline often doesn't match between typefaces. The library stores a per-language vertical pixel offset that your display code can query and apply.
+
+Register the offset when adding a language:
+
+```cpp
+i18n::addLanguage(i18n::Lang::English,    strings_en, N,  0);  // baseline reference
+i18n::addLanguage(i18n::Lang::Spanish,    strings_es, N, -3);  // 3px up
+i18n::addLanguage(i18n::Lang::Vietnamese, strings_vi, N, -5);  // 5px up
+```
+
+Query it when rendering text:
+
+```cpp
+int8_t offset = i18n::fontYOffset();           // active language
+int8_t offset = i18n::fontYOffset(langIndex);  // specific language
+```
+
+If you use my library `lib_display`, call `gfx_set_font_y_offset(i18n::fontYOffset())` after switching languages. The display wrappers (`gfx_setCursor`, `gfx_drawCentreString`, etc.) apply the offset automatically.
+
+## Supported languages
+
+| Enum value | Display name |
+| --- | --- |
+| `Lang::English` | English |
+| `Lang::Chinese` | 中文 |
+| `Lang::Japanese` | 日本語 |
+| `Lang::Spanish` | Español |
+| `Lang::Vietnamese` | Tiếng Việt |
+| `Lang::Korean` | 한국어 |
+| `Lang::French` | Français |
+| `Lang::German` | Deutsch |
+
+To add a new language, add it to the `Lang` enum in `i18n.h` and its display name to the `s_langNames` array in `i18n.cpp`.
+
+## API reference
+
+| Function | Description |
+| --- | --- |
+| `addLanguage(lang, strings, count, yOffset)` | Register a language at boot. Returns its index. |
+| `str(index)` | Get translated string for the active language. |
+| `setLanguage(langIndex)` | Switch the active language (by registration index). |
+| `getLanguage()` | Get the active language index. |
+| `languageCount()` | Number of registered languages. |
+| `languageName(langIndex)` | Display name of a registered language. |
+| `languageId(langIndex)` | `Lang` enum value of a registered language. |
+| `langName(Lang)` | Display name of any language (registered or not). |
+| `fontYOffset()` | Vertical offset for the active language. |
+| `fontYOffset(langIndex)` | Vertical offset for a specific language. |
+
+## Limits
+
+- Up to 8 languages per project (`MAX_LANGUAGES`)
+- String tables are `const char*` arrays in PROGMEM — no heap allocation
+- No runtime string formatting — the library returns pointers to static strings
+- Thread safety: not thread-safe. Call from the main loop only.
+
+## Font files
+
+The library includes pre-generated U8g2 subset fonts for non-English languages in `src/i18n_engine/fonts/`. These are generated from system fonts using `bdfconv` and contain only the characters needed for the translation strings — typically 2-10 KB per font size, not the 1-2 MB a full CJK font would require.
+
+The font generation pipeline (in the project's `tools/` directory):
+
+1. `generate_font_subset.py` — extracts unique codepoints from translation headers
+2. `otf2bdf` (system tool) — converts TTF/TTC to BDF format
+3. `bdfconv` (from u8g2 project) — generates U8g2 binary font arrays from BDF + subset map
+`https://github.com/olikraus/u8g2/wiki/u8g2fontformat`
+
+## Tests
+
+The library includes a Google Test suite that covers registration, string lookup, language switching, built-in names, vertical offset, and CJK content handling.
+
+### Prerequisites
+
+- CMake 3.16+
+- A C++17 compiler (GCC, Clang, or MSVC)
+- Internet connection (first build fetches Google Test automatically)
+
+### Run the tests
+
+```shell
+cd tests
+./1_build.sh     # configure cmake (only needed once)
+./2_run.sh       # build and run all tests
+```
+
+### Filter tests
+
+```shell
+./2_run.sh -R FontYOffset   # run only vertical offset tests
+./2_run.sh -R LangName      # run only language name tests
+./2_run.sh -V               # verbose output
+```
+
+## Acknowledgements
+
+Thanks to Claude and ChatGPT for helping on generating this documentation.
+
+## License
+
+MIT License — see [LICENSE](license.txt) file.
