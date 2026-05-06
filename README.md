@@ -44,7 +44,7 @@ Say your project has two translatable strings: "START" and "STOP".
 ```cpp
 // Example file: my_strings.h
 #pragma once
-#include <i18n_engine/i18n.h>
+#include <ungula/i18n/i18n.h>
 
 enum class StringId : uint16_t {
   BTN_START = 0,
@@ -54,7 +54,7 @@ enum class StringId : uint16_t {
 
 // Convenience wrapper — avoids casting from your own enum to the int everywhere
 inline const char* str(StringId sid) {
-  return i18n::str(static_cast<uint16_t>(sid));
+  return ungula::i18n::str(static_cast<uint16_t>(sid));
 }
 ```
 
@@ -110,9 +110,9 @@ static_assert(sizeof(strings_en) / sizeof(strings_en[0]) == static_cast<size_t>(
 static constexpr uint16_t N = static_cast<uint16_t>(StringId::STRING_COUNT);
 
 void setup_languages() {
-  i18n::addLanguage(i18n::Lang::English, strings_en, N);
-  i18n::addLanguage(i18n::Lang::Spanish, strings_es, N, -3);  // -3px vertical offset
-  i18n::addLanguage(i18n::Lang::Chinese, strings_cn, N);
+  ungula::i18n::addLanguage(ungula::i18n::Lang::English, strings_en, N);
+  ungula::i18n::addLanguage(ungula::i18n::Lang::Spanish, strings_es, N, -3);  // -3px vertical offset
+  ungula::i18n::addLanguage(ungula::i18n::Lang::Chinese, strings_cn, N);
 }
 ```
 
@@ -133,7 +133,7 @@ void setup() {
   delay(200);  // Allow time for Serial to stabilize
 
   setup_languages();
-  i18n::setLanguage(0);  // start in English (or store it in your device's NVS)
+  ungula::i18n::setLanguage(0);  // start in English (or store it in your device's NVS)
 }
 
 void printStuff() {
@@ -142,7 +142,7 @@ void printStuff() {
 }
 
 void onLanguageChanged(uint8_t newLang) {
-  i18n::setLanguage(newLang);
+  ungula::i18n::setLanguage(newLang);
   printStuff(); // now shows the labels based on currently setup language
 }
 ```
@@ -152,18 +152,18 @@ void onLanguageChanged(uint8_t newLang) {
 The library knows the display name of every supported language in its own script. You never need to deal with hex-encoded UTF-8 strings for language names:
 
 ```cpp
-i18n::langName(i18n::Lang::English);     // "English"
-i18n::langName(i18n::Lang::Chinese);     // "中文"
-i18n::langName(i18n::Lang::Spanish);     // "Español"
-i18n::langName(i18n::Lang::Vietnamese);  // "Tiếng Việt"
-i18n::langName(i18n::Lang::Japanese);    // "日本語"
+ungula::i18n::langName(ungula::i18n::Lang::English);     // "English"
+ungula::i18n::langName(ungula::i18n::Lang::Chinese);     // "中文"
+ungula::i18n::langName(ungula::i18n::Lang::Spanish);     // "Español"
+ungula::i18n::langName(ungula::i18n::Lang::Vietnamese);  // "Tiếng Việt"
+ungula::i18n::langName(ungula::i18n::Lang::Japanese);    // "日本語"
 ```
 
 For registered languages, use the index-based version:
 
 ```cpp
-for (uint8_t i = 0; i < i18n::languageCount(); ++i) {
-  drawLanguageButton(i, i18n::languageName(i));
+for (uint8_t i = 0; i < ungula::i18n::languageCount(); ++i) {
+  drawLanguageButton(i, ungula::i18n::languageName(i));
 }
 ```
 
@@ -174,19 +174,19 @@ When mixing font sources (e.g., Adafruit GFX for English, U8g2 for CJK), the tex
 Register the offset when adding a language:
 
 ```cpp
-i18n::addLanguage(i18n::Lang::English,    strings_en, N,  0);  // baseline reference
-i18n::addLanguage(i18n::Lang::Spanish,    strings_es, N, -3);  // 3px up
-i18n::addLanguage(i18n::Lang::Vietnamese, strings_vi, N, -5);  // 5px up
+ungula::i18n::addLanguage(ungula::i18n::Lang::English,    strings_en, N,  0);  // baseline reference
+ungula::i18n::addLanguage(ungula::i18n::Lang::Spanish,    strings_es, N, -3);  // 3px up
+ungula::i18n::addLanguage(ungula::i18n::Lang::Vietnamese, strings_vi, N, -5);  // 5px up
 ```
 
 Query it when rendering text:
 
 ```cpp
-int8_t offset = i18n::fontYOffset();           // active language
-int8_t offset = i18n::fontYOffset(langIndex);  // specific language
+int8_t offset = ungula::i18n::fontYOffset();           // active language
+int8_t offset = ungula::i18n::fontYOffset(langIndex);  // specific language
 ```
 
-If you use my library `lib_display`, call `gfx_set_font_y_offset(i18n::fontYOffset())` after switching languages. The display wrappers (`gfx_setCursor`, `gfx_drawCentreString`, etc.) apply the offset automatically.
+If you use my library `lib_display`, call `gfx_set_font_y_offset(ungula::i18n::fontYOffset())` after switching languages. The display wrappers (`gfx_setCursor`, `gfx_drawCentreString`, etc.) apply the offset automatically.
 
 ## Supported languages
 

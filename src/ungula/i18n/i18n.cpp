@@ -3,7 +3,7 @@
 
 #include "i18n.h"
 
-namespace i18n {
+namespace ungula::i18n {
 
     // Built-in language display names (in their own script). Never changes.
     static const char* const s_langNames[] = {
@@ -106,4 +106,4 @@ namespace i18n {
     }
 #endif
 
-}  // namespace i18n
+}  // namespace ungula::i18n

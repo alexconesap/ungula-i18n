@@ -18,7 +18,7 @@ caller-owned `const char*` arrays.
 
 ```cpp
 #include <Arduino.h>
-#include <ungula_i18n.h>
+#include <ungula/i18n.h>
 
 enum class StringId : uint16_t {
   BTN_START = 0,
@@ -38,16 +38,16 @@ static const char* const strings_es[N] = {
 };
 
 inline const char* tr(StringId sid) {
-  return i18n::str(static_cast<uint16_t>(sid));
+  return ungula::i18n::str(static_cast<uint16_t>(sid));
 }
 
 void setup() {
   Serial.begin(115200);
-  i18n::addLanguage(i18n::Lang::English, strings_en, N);
-  i18n::addLanguage(i18n::Lang::Spanish, strings_es, N, -3);
-  i18n::setLanguage(0);            // English
+  ungula::i18n::addLanguage(ungula::i18n::Lang::English, strings_en, N);
+  ungula::i18n::addLanguage(ungula::i18n::Lang::Spanish, strings_es, N, -3);
+  ungula::i18n::setLanguage(0);            // English
   Serial.println(tr(StringId::BTN_START));   // "START"
-  i18n::setLanguage(1);            // Spanish
+  ungula::i18n::setLanguage(1);            // Spanish
   Serial.println(tr(StringId::BTN_START));   // "INICIAR"
 }
 
@@ -61,12 +61,12 @@ numeric interface to them.
 ### Use case: enumerate registered languages for a settings menu
 
 ```cpp
-#include <ungula_i18n.h>
+#include <ungula/i18n.h>
 
 void drawLanguagePicker() {
-  for (uint8_t i = 0; i < i18n::languageCount(); ++i) {
-    const char* label = i18n::languageName(i);   // "English", "Espanol", ...
-    i18n::Lang   id    = i18n::languageId(i);    // enum value, if needed
+  for (uint8_t i = 0; i < ungula::i18n::languageCount(); ++i) {
+    const char* label = ungula::i18n::languageName(i);   // "English", "Espanol", ...
+    ungula::i18n::Lang   id    = ungula::i18n::languageId(i);    // enum value, if needed
     // hand `label` to the GFX code that draws the menu row
     (void)label; (void)id;
   }
@@ -80,10 +80,10 @@ the UI code.
 ### Use case: query any language's display name (registered or not)
 
 ```cpp
-#include <ungula_i18n.h>
+#include <ungula/i18n.h>
 
-const char* a = i18n::langName(i18n::Lang::Chinese);     // "中文"
-const char* b = i18n::langName(i18n::Lang::Vietnamese);  // "Tiếng Việt"
+const char* a = ungula::i18n::langName(ungula::i18n::Lang::Chinese);     // "中文"
+const char* b = ungula::i18n::langName(ungula::i18n::Lang::Vietnamese);  // "Tiếng Việt"
 ```
 
 When to use this: showing a language name before deciding to register the
@@ -92,10 +92,10 @@ language, or for diagnostic logs.
 ### Use case: per-language baseline correction when mixing fonts
 
 ```cpp
-#include <ungula_i18n.h>
+#include <ungula/i18n.h>
 
 void render(/* gfx ctx */) {
-  int8_t dy = i18n::fontYOffset();   // active language
+  int8_t dy = ungula::i18n::fontYOffset();   // active language
   // shift the cursor by `dy` pixels before drawing strings whose font's
   // baseline does not match the GFX-default font's baseline
   (void)dy;
@@ -110,11 +110,11 @@ subset fonts (CJK, Vietnamese) on the same screen and the baselines differ.
 ## API
 
 All symbols live in namespace `i18n`. Single public header is
-`ungula_i18n.h`, which includes `i18n_engine/i18n.h`.
+`ungula/i18n.h`, which includes `ungula/i18n/i18n.h`.
 
 ### Public types
 
-#### `enum class i18n::Lang : uint8_t`
+#### `enum class ungula::i18n::Lang : uint8_t`
 
 Built-in catalog of languages the library knows the display name of.
 
@@ -130,7 +130,7 @@ Built-in catalog of languages the library knows the display name of.
 A project does not have to register every variant; register only what the
 project ships.
 
-#### `static constexpr uint8_t i18n::MAX_LANGUAGES = 5`
+#### `static constexpr uint8_t ungula::i18n::MAX_LANGUAGES = 5`
 
 Hard cap on how many languages a project can register. `addLanguage`
 returns `0xFF` once this is reached.
@@ -139,7 +139,7 @@ returns `0xFF` once this is reached.
 
 All declarations from `src/i18n_engine/i18n.h`:
 
-#### `const char* i18n::langName(Lang lang)`
+#### `const char* ungula::i18n::langName(Lang lang)`
 
 - **Purpose**: built-in display name of a `Lang` variant, in its own script.
 - **Parameters**: `lang` - any `Lang` value.
@@ -148,7 +148,7 @@ All declarations from `src/i18n_engine/i18n.h`:
 - **Side effects**: none.
 - **Failure behavior**: never returns null.
 
-#### `uint8_t i18n::addLanguage(Lang lang, const char* const* strings, uint16_t stringCount, int8_t yOffset = 0)`
+#### `uint8_t ungula::i18n::addLanguage(Lang lang, const char* const* strings, uint16_t stringCount, int8_t yOffset = 0)`
 
 - **Purpose**: register a translation table at boot. Records pointer, count
   and per-language Y-offset. Does not copy the table.
@@ -169,7 +169,7 @@ All declarations from `src/i18n_engine/i18n.h`:
 - **Usage notes**: registration order defines the `langIndex` used by
   `setLanguage`, `languageName`, etc. Call before `setLanguage`.
 
-#### `const char* i18n::str(uint16_t index)`
+#### `const char* ungula::i18n::str(uint16_t index)`
 
 - **Purpose**: look up a string by index in the active language's table.
 - **Returns**: pointer to the static string, or `"?"` if no language is
@@ -181,7 +181,7 @@ All declarations from `src/i18n_engine/i18n.h`:
   thin `inline` helper that casts its own `enum class StringId` to
   `uint16_t`.
 
-#### `void i18n::setLanguage(uint8_t langIndex)`
+#### `void ungula::i18n::setLanguage(uint8_t langIndex)`
 
 - **Purpose**: switch the active language to the registration with this
   index.
@@ -189,21 +189,21 @@ All declarations from `src/i18n_engine/i18n.h`:
   active language stays.
 - **Usage notes**: cheap; safe to call on every settings change.
 
-#### `uint8_t i18n::getLanguage()`
+#### `uint8_t ungula::i18n::getLanguage()`
 
 - **Purpose**: current active registration index. Defaults to 0.
 
-#### `uint8_t i18n::languageCount()`
+#### `uint8_t ungula::i18n::languageCount()`
 
 - **Purpose**: number of registered languages. Bounded by `MAX_LANGUAGES`.
 
-#### `const char* i18n::languageName(uint8_t langIndex)`
+#### `const char* ungula::i18n::languageName(uint8_t langIndex)`
 
 - **Purpose**: built-in display name for a registered language, looked up
   by registration index.
 - **Returns**: static string, or `"?"` if `langIndex >= languageCount()`.
 
-#### `i18n::Lang i18n::languageId(uint8_t langIndex)`
+#### `ungula::i18n::Lang ungula::i18n::languageId(uint8_t langIndex)`
 
 - **Purpose**: get the `Lang` enum that was passed to `addLanguage` for a
   given registration index.
@@ -211,12 +211,12 @@ All declarations from `src/i18n_engine/i18n.h`:
 - **Usage notes**: prefer `languageCount() == 0` checks before relying on
   the return - `Lang::English` is also a valid registered value.
 
-#### `int8_t i18n::fontYOffset()`
+#### `int8_t ungula::i18n::fontYOffset()`
 
 - **Purpose**: vertical pixel offset stored for the active language.
 - **Returns**: `0` if no language is active.
 
-#### `int8_t i18n::fontYOffset(uint8_t langIndex)`
+#### `int8_t ungula::i18n::fontYOffset(uint8_t langIndex)`
 
 - **Purpose**: same, for a specific registered language.
 - **Returns**: `0` on out-of-range index.
@@ -225,11 +225,11 @@ All declarations from `src/i18n_engine/i18n.h`:
 
 ## Lifecycle
 
-1. At boot, call `i18n::addLanguage(...)` once per language the project
+1. At boot, call `ungula::i18n::addLanguage(...)` once per language the project
    ships, in the order the UI should expose them.
-2. Call `i18n::setLanguage(idx)` to pick the initial language (e.g. from
+2. Call `ungula::i18n::setLanguage(idx)` to pick the initial language (e.g. from
    the device's NVS / preferences).
-3. During run-time, `i18n::str(...)` reads the active table; `setLanguage`
+3. During run-time, `ungula::i18n::str(...)` reads the active table; `setLanguage`
    may be called any time to switch tables.
 4. There is no shutdown / unregister path. Language registrations live for
    the lifetime of the process.
@@ -283,7 +283,7 @@ Out-of-order use is benign: calling `str` before any `addLanguage` returns
   `i18n.cpp` - file-static state. Mutate only through the public API.
 - `struct RegisteredLang` - storage record, defined in `i18n.cpp`. Not
   exported.
-- `i18n::reset()` - exists only when the TU is built with `I18N_TESTING`
+- `ungula::i18n::reset()` - exists only when the TU is built with `I18N_TESTING`
   defined. For unit tests; do not call from production code.
 - `src/i18n_engine/fonts/*.h` - data blobs consumed by the host's GFX
   layer, not by the library. Including them is optional.
@@ -297,12 +297,12 @@ The current API is small and stable enough to keep as is. Two shallow
 edges worth flagging:
 
 1. `addLanguage` does not validate that `stringCount` matches across
-   registrations. A `bool i18n::tablesConsistent()` (or a strict mode
+   registrations. A `bool ungula::i18n::tablesConsistent()` (or a strict mode
    that fails registration if counts differ) would catch the most common
    bug at boot.
 2. `languageId` returns `Lang::English` on out-of-range index, which is
    indistinguishable from a legitimately registered English. A second
-   form returning `bool i18n::tryLanguageId(uint8_t, Lang&)` would let
+   form returning `bool ungula::i18n::tryLanguageId(uint8_t, Lang&)` would let
    callers tell "no such index" from "English".
 
 These are proposals only. Do not call them in code today.
@@ -312,8 +312,8 @@ These are proposals only. Do not call them in code today.
 ## LLM usage rules
 
 - Use only the documented public API. The single include is
-  `<ungula_i18n.h>`.
-- Wrap `i18n::str(uint16_t)` in a host-side inline that takes the host's
+  `<ungula/i18n.h>`.
+- Wrap `ungula::i18n::str(uint16_t)` in a host-side inline that takes the host's
   own `enum class StringId` - do not scatter raw casts.
 - Always size every translation array to the host's `STRING_COUNT` and
   pass that same value as `stringCount` to `addLanguage`. Asymmetric
@@ -322,7 +322,7 @@ These are proposals only. Do not call them in code today.
   the return value of `addLanguage` if registering dynamically.
 - Do not read or write `s_languages`, `s_activeLang`, `s_langNames`, or
   any symbol from `i18n.cpp` directly.
-- Do not call `i18n::reset()` outside a `I18N_TESTING` build.
+- Do not call `ungula::i18n::reset()` outside a `I18N_TESTING` build.
 - The library is single-threaded; do not call any function from an ISR or
   a second RTOS task.
 - Treat all returned `const char*` as borrowed, immutable, and valid for

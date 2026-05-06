@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace i18n {
+namespace ungula::i18n {
 
     /// Maximum number of languages a project can register
     static constexpr uint8_t MAX_LANGUAGES = 5;
@@ -61,4 +61,4 @@ namespace i18n {
     void reset();
 #endif
 
-}  // namespace i18n
+}  // namespace ungula::i18n

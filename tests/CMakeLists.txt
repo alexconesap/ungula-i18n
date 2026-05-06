@@ -26,7 +26,7 @@ add_compile_definitions(
 
 add_executable(test_i18n
     test_i18n.cpp
-    ${LIB_SRC}/i18n_engine/i18n.cpp
+    ${LIB_SRC}/ungula/i18n/i18n.cpp
 )
 target_link_libraries(test_i18n gtest_main)
 
