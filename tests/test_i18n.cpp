@@ -53,7 +53,8 @@ TEST_F(I18nTest, LanguageCountMatchesRegistrations) {
 
 TEST_F(I18nTest, AddLanguageRejectsWhenFull) {
     for (uint8_t idx = 0; idx < ungula::i18n::MAX_LANGUAGES; ++idx) {
-        EXPECT_NE(ungula::i18n::addLanguage(ungula::i18n::Lang::English, strings_en, EN_COUNT), 0xFF);
+        EXPECT_NE(ungula::i18n::addLanguage(ungula::i18n::Lang::English, strings_en, EN_COUNT),
+                  0xFF);
     }
     // One more should fail
     EXPECT_EQ(ungula::i18n::addLanguage(ungula::i18n::Lang::English, strings_en, EN_COUNT), 0xFF);
@@ -112,7 +113,8 @@ TEST_F(I18nTest, GetLanguageReturnsActiveIndex) {
 TEST_F(I18nTest, LangNameReturnsBuiltInNames) {
     EXPECT_STREQ(ungula::i18n::langName(ungula::i18n::Lang::English), "English");
     EXPECT_STREQ(ungula::i18n::langName(ungula::i18n::Lang::Spanish), "Espa\xc3\xb1ol");
-    EXPECT_STREQ(ungula::i18n::langName(ungula::i18n::Lang::Vietnamese), "Ti\xe1\xba\xbfng Vi\xe1\xbb\x87t");
+    EXPECT_STREQ(ungula::i18n::langName(ungula::i18n::Lang::Vietnamese),
+                 "Ti\xe1\xba\xbfng Vi\xe1\xbb\x87t");
 }
 
 TEST_F(I18nTest, LangNameReturnsQuestionMarkForInvalid) {
