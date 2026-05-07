@@ -16,9 +16,10 @@ Your project provides the translated string tables. The library provides the eng
 Use the library in this simple way (Arduino style example):
 
 ```cpp
-Serial.println(
-  str(StringId::BTN_START)
-);
+#include <ungula/i18n.h>
+#include <emblogx/logger.h>
+
+log_info("%s", str(StringId::BTN_START));
 ```
 
 ## How it works
@@ -94,6 +95,8 @@ Each array must have exactly `STRING_COUNT` entries, in the same order as the en
 A `static_assert` in each file is a good safety net:
 
 ```cpp
+#include <ungula/i18n.h>
+
 static_assert(sizeof(strings_en) / sizeof(strings_en[0]) == static_cast<size_t>(StringId::STRING_COUNT),
               "strings_en size mismatch");
 ```
@@ -125,20 +128,23 @@ You only register the languages your project needs. If you don't need Japanese, 
 Arduino example:
 
 ```cpp
+#include <ungula/i18n.h>
+#include <emblogx/logger.h>
+#include <emblogx/sinks/console_sink.h>
+
+static emblogx::ConsoleSink g_console;
+
 void setup() {
-  Serial.begin(115200);
-  while (!Serial) {
-    // Do nothing. Just wait for Serial to be ready.
-  }
-  delay(200);  // Allow time for Serial to stabilize
+  emblogx::register_sink(&g_console);
+  emblogx::init();
 
   setup_languages();
   ungula::i18n::setLanguage(0);  // start in English (or store it in your device's NVS)
 }
 
 void printStuff() {
-  Serial.println(str(StringId::BTN_START));
-  Serial.println(str(StringId::BTN_STOP));
+  log_info("%s", str(StringId::BTN_START));
+  log_info("%s", str(StringId::BTN_STOP));
 }
 
 void onLanguageChanged(uint8_t newLang) {
@@ -152,6 +158,8 @@ void onLanguageChanged(uint8_t newLang) {
 The library knows the display name of every supported language in its own script. You never need to deal with hex-encoded UTF-8 strings for language names:
 
 ```cpp
+#include <ungula/i18n.h>
+
 ungula::i18n::langName(ungula::i18n::Lang::English);     // "English"
 ungula::i18n::langName(ungula::i18n::Lang::Chinese);     // "中文"
 ungula::i18n::langName(ungula::i18n::Lang::Spanish);     // "Español"
@@ -162,6 +170,8 @@ ungula::i18n::langName(ungula::i18n::Lang::Japanese);    // "日本語"
 For registered languages, use the index-based version:
 
 ```cpp
+#include <ungula/i18n.h>
+
 for (uint8_t i = 0; i < ungula::i18n::languageCount(); ++i) {
   drawLanguageButton(i, ungula::i18n::languageName(i));
 }
@@ -174,6 +184,8 @@ When mixing font sources (e.g., Adafruit GFX for English, U8g2 for CJK), the tex
 Register the offset when adding a language:
 
 ```cpp
+#include <ungula/i18n.h>
+
 ungula::i18n::addLanguage(ungula::i18n::Lang::English,    strings_en, N,  0);  // baseline reference
 ungula::i18n::addLanguage(ungula::i18n::Lang::Spanish,    strings_es, N, -3);  // 3px up
 ungula::i18n::addLanguage(ungula::i18n::Lang::Vietnamese, strings_vi, N, -5);  // 5px up
@@ -182,6 +194,8 @@ ungula::i18n::addLanguage(ungula::i18n::Lang::Vietnamese, strings_vi, N, -5);  /
 Query it when rendering text:
 
 ```cpp
+#include <ungula/i18n.h>
+
 int8_t offset = ungula::i18n::fontYOffset();           // active language
 int8_t offset = ungula::i18n::fontYOffset(langIndex);  // specific language
 ```
