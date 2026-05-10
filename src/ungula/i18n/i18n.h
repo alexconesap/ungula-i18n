@@ -5,7 +5,8 @@
 
 #include <cstdint>
 
-namespace ungula::i18n {
+namespace ungula::i18n
+{
 
     /// Maximum number of languages a project can register
     static constexpr uint8_t MAX_LANGUAGES = 5;
@@ -14,26 +15,25 @@ namespace ungula::i18n {
     /// Projects pick which ones they need — no need to remember encodings.
     enum class Lang : uint8_t {
         English = 0,
-        Chinese,     // 1 中文
-        Japanese,    // 2 日本語
-        Spanish,     // 3 Español
-        Vietnamese,  // 4 Tiếng Việt
+        Chinese, // 1 中文
+        Japanese, // 2 日本語
+        Spanish, // 3 Español
+        Vietnamese, // 4 Tiếng Việt
         // ...
-        LANG_COUNT  // 5 (not a real language, just a count)
+        LANG_COUNT // 5 (not a real language, just a count)
     };
 
     /// Get the display name of a language in its own script (built-in, always available)
-    const char* langName(Lang lang);
+    const char *langName(Lang lang);
 
     /// Register a language for this project. Call at boot.
     /// The string table is the project's translated strings array.
     /// yOffset: vertical pixel correction for text rendering (positive = down).
     /// Returns the assigned index (0-based registration order), or 0xFF if full.
-    uint8_t addLanguage(Lang lang, const char* const* strings, uint16_t stringCount,
-                        int8_t yOffset = 0);
+    uint8_t addLanguage(Lang lang, const char *const *strings, uint16_t stringCount, int8_t yOffset = 0);
 
     /// Get translated string for the current language by index
-    const char* str(uint16_t index);
+    const char *str(uint16_t index);
 
     /// Set the active language by registration order (0-based)
     void setLanguage(uint8_t langIndex);
@@ -45,7 +45,7 @@ namespace ungula::i18n {
     uint8_t languageCount();
 
     /// Get the display name of a registered language (by registration index)
-    const char* languageName(uint8_t langIndex);
+    const char *languageName(uint8_t langIndex);
 
     /// Get the Lang enum value of a registered language (by registration index)
     Lang languageId(uint8_t langIndex);
@@ -61,4 +61,4 @@ namespace ungula::i18n {
     void reset();
 #endif
 
-}  // namespace ungula::i18n
+} // namespace ungula::i18n
