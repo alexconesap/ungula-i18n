@@ -211,9 +211,6 @@ If you use my library `lib_display`, call `gfx_set_font_y_offset(ungula::i18n::f
 | `Lang::Japanese` | 日本語 |
 | `Lang::Spanish` | Español |
 | `Lang::Vietnamese` | Tiếng Việt |
-| `Lang::Korean` | 한국어 |
-| `Lang::French` | Français |
-| `Lang::German` | Deutsch |
 
 To add a new language, add it to the `Lang` enum in `i18n.h` and its display name to the `s_langNames` array in `i18n.cpp`.
 
@@ -234,14 +231,14 @@ To add a new language, add it to the `Lang` enum in `i18n.h` and its display nam
 
 ## Limits
 
-- Up to 8 languages per project (`MAX_LANGUAGES`)
+- Up to 5 languages per project (`MAX_LANGUAGES`)
 - String tables are `const char*` arrays in PROGMEM — no heap allocation
 - No runtime string formatting — the library returns pointers to static strings
 - Thread safety: not thread-safe. Call from the main loop only.
 
 ## Font files
 
-The library includes pre-generated U8g2 subset fonts for non-English languages in `src/i18n_engine/fonts/`. These are generated from system fonts using `bdfconv` and contain only the characters needed for the translation strings — typically 2-10 KB per font size, not the 1-2 MB a full CJK font would require.
+The library includes pre-generated U8g2 subset fonts for non-English languages in `src/ungula/i18n/fonts/`. These are generated from system fonts using `bdfconv` and contain only the characters needed for the translation strings - typically 2-10 KB per font size, not the 1-2 MB a full CJK font would require.
 
 The font generation pipeline (in the project's `tools/` directory):
 
