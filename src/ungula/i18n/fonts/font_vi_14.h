@@ -8,6 +8,7 @@
   Arial� is a trademark of The Monotype Corporation which may be registered in certain
   jurisdictions. Glyphs: 241/38917 BBX Build Mode: 0
 */
+// clang-format off
 const uint8_t font_vi_14[4849] PROGMEM =
     "\361\0\3\2\5\5\4\5\6\22\26\377\374\14\375\14\375\2\4\4\200\15\256 \6\0 ,\1!\12\202"
     "%,qPzK\2\42\10\204$\66\21\71\5#\30\211!L'i\305,\31NR\230\205Y\64\234"
@@ -198,3 +199,4 @@ const uint8_t font_vi_14[4849] PROGMEM =
     "g,%\357\345\213\237\343\71\236#\303C<\350XR\207\224DG\242z\26\251Z&-\303\220(q"
     "=\307s<\7\212\236*\357\345\213\63<\344X:l\71:\14\71\26e\203$\345\230\224\15\17:\313"
     "\60DC\24J\215R\243\64D\303\20\65*\0\0";
+// clang-format on
