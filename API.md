@@ -12,6 +12,30 @@ caller-owned `const char*` arrays.
 
 ---
 
+## LLM quick map
+
+- **Primary include**: `#include <ungula/i18n.h>`.
+- **Arduino discovery include**: `#include <ungula_i18n.h>` (forwarder only; host code should keep using the real header).
+- **Namespace root**: `ungula::i18n`.
+- **Language baseline**: C++17 minimum (examples avoid post-C++17 requirements).
+- **Supported architectures**: `*`.
+- **Read order for coding agents**: `Usage` (working patterns) -> `API` (symbols/signatures) -> `Lifecycle`/`Error handling`/`Threading` notes in this file.
+
+### Use-case index
+
+- [Use case: register languages and look up strings (Arduino)](#use-case-register-languages-and-look-up-strings-arduino)
+- [Use case: enumerate registered languages for a settings menu](#use-case-enumerate-registered-languages-for-a-settings-menu)
+- [Use case: query any language's display name (registered or not)](#use-case-query-any-languages-display-name-registered-or-not)
+- [Use case: per-language baseline correction when mixing fonts](#use-case-per-language-baseline-correction-when-mixing-fonts)
+
+### LLM rules
+
+- Use only symbols and include paths documented in this file; do not infer extra public API from implementation files.
+- Prefer the use-case patterns here over ad-hoc rewrites; keep dependency wiring and lifecycle order identical unless the task explicitly changes API design.
+- Treat headers under `detail/`, `platform/`, and `platforms/` as internal unless this document calls them out as public.
+- If required behavior is missing from the documented API, report the gap explicitly instead of inventing new public symbols.
+
+
 ## Usage
 
 ### Use case: register languages and look up strings (Arduino)

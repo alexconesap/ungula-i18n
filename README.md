@@ -2,6 +2,8 @@
 
 > **High-performance embedded C++ libraries for ESP32, STM32 and other MCUs** — lightweight i18n framework for embedded UIs.
 
+> **LLM usage note:** if this library is consumed from a coding AI workflow, explicitly point the agent to `API.md` first. `API.md` is the LLM-facing contract (public API + examples + constraints) and avoids wasting time/tokens scanning source files and this human-oriented README.
+
 A small i18n library for embedded projects. Lets you add multi-language support without hardcoding language strings or dealing with UTF-8 encodings in your application code.
 
 The library handles:
@@ -21,6 +23,28 @@ Use the library in this simple way (Arduino style example):
 
 log_info("%s", str(StringId::BTN_START));
 ```
+
+## Table of Contents
+
+- [How it works](#how-it-works)
+- [Quick example](#quick-example)
+  - [1. Define your string IDs](#1-define-your-string-ids)
+  - [2. Write the translation tables](#2-write-the-translation-tables)
+  - [3. Register languages at boot](#3-register-languages-at-boot)
+  - [4. Use it](#4-use-it)
+- [Language names](#language-names)
+- [Vertical text offset](#vertical-text-offset)
+- [Supported languages](#supported-languages)
+- [API reference](#api-reference)
+- [Limits](#limits)
+- [Font files](#font-files)
+- [Tests](#tests)
+  - [Prerequisites](#prerequisites)
+  - [Run the tests](#run-the-tests)
+  - [Filter tests](#filter-tests)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+- [Arduino CLI symlink note (rarely relevant)](#arduino-cli-symlink-note-rarely-relevant)
 
 ## How it works
 
