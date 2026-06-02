@@ -60,20 +60,12 @@
 #define pgm_read_word_near(addr) pgm_read_word(addr)
 #endif
 
-#ifndef memcpy_P
-#define memcpy_P(dst, src, n) memcpy((dst), (src), (n))
-#endif
-#ifndef strcpy_P
-#define strcpy_P(dst, src) strcpy((dst), (src))
-#endif
-#ifndef strncpy_P
-#define strncpy_P(dst, src, n) strncpy((dst), (src), (n))
-#endif
-#ifndef strlen_P
-#define strlen_P(s) strlen(s)
-#endif
-#ifndef strcmp_P
-#define strcmp_P(a, b) strcmp((a), (b))
-#endif
+// NOTE: deliberately no memcpy_P / str*_P here. LovyanGFX's own
+// utility/pgmspace.h defines memcpy_P as an inline FUNCTION under
+// `#ifndef ARDUINO`. If a same-named macro is already defined when both
+// headers meet in one translation unit, the preprocessor rewrites that
+// function's signature into garbage and the whole color-type header
+// (colortype.hpp) fails to parse. On ESP32 these _P helpers are just the
+// plain libc calls anyway, so consumers use memcpy/strlen directly.
 
 #endif // ARDUINO
