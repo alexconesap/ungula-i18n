@@ -23,6 +23,7 @@ Use the library in this simple way (Arduino style example):
 #include <ungula/i18n.h>
 #include <emblogx/logger.h>
 
+// `str(StringId)` is the thin host-side wrapper shown in the Quick example
 log_info("%s", str(StringId::BTN_START));
 ```
 
@@ -245,7 +246,9 @@ If you use my library `lib_display`, call `gfx_set_font_y_offset(ungula::i18n::f
 | `Lang::Spanish` | Español |
 | `Lang::Vietnamese` | Tiếng Việt |
 
-To add a new language, add it to the `Lang` enum in `i18n.h` and its display name to the `s_langNames` array in `i18n.cpp`.
+Five variants, matching the `Lang` enum in `src/ungula/i18n/i18n.h`. `Lang::LANG_COUNT` is the sentinel, not a language — never pass it to `addLanguage()`.
+
+To add a new language, add it to the `Lang` enum in `i18n.h` and its display name to the `s_langNames` array in `i18n.cpp`, keeping both in the same order. `MAX_LANGUAGES` is a separate limit (how many tables one project may register), so raise it too if a project needs to ship more than 5 at once.
 
 ## API reference
 
@@ -262,27 +265,41 @@ To add a new language, add it to the `Lang` enum in `i18n.h` and its display nam
 | `fontYOffset()` | Vertical offset for the active language. |
 | `fontYOffset(langIndex)` | Vertical offset for a specific language. |
 
+Plus two types: `enum class Lang : uint8_t` (the language catalogue) and `static constexpr uint8_t MAX_LANGUAGES = 5` (registration cap).
+
+Every getter returns a safe value on a bad index — `"?"` for strings and names, `0` for offsets, `Lang::English` for `languageId()` — so no call needs a guard. `setLanguage()` with an unknown index is a no-op.
+
 ## Limits
 
 - Up to 5 languages per project (`MAX_LANGUAGES`)
 - String tables are `const char*` arrays in PROGMEM — no heap allocation
 - No runtime string formatting — the library returns pointers to static strings
+- No cross-language fallback: if the active table is shorter than the one you built the UI against, the missing IDs render as `"?"`. Size every table to `STRING_COUNT`.
+- `addLanguage()` trusts its arguments: it does not check `lang` against the catalogue, does not check `strings` for null, and does not compare `stringCount` between languages. Pass only real `Lang` variants.
 - Thread safety: not thread-safe. Call from the main loop only.
 
 ## Font files
 
-The library includes pre-generated U8g2 subset fonts for non-English languages in `src/ungula/i18n/fonts/`. These are generated from system fonts using `bdfconv` and contain only the characters needed for the translation strings - typically 2-10 KB per font size, not the 1-2 MB a full CJK font would require.
+The library includes pre-generated U8g2 subset fonts for non-English languages in `src/ungula/i18n/fonts/`: `font_cn_{14,20,28}.h`, `font_es_*`, `font_ja_*`, `font_vi_*`. These are generated from system fonts using `bdfconv` and contain only the characters needed for the translation strings - typically 2-16 KB per font size, not the 1-2 MB a full CJK font would require.
 
-The font generation pipeline (in the project's `tools/` directory):
+Each array is `const` at namespace scope, so it has internal linkage. Include a font header from **one** source file only: a second include silently duplicates the whole array in flash instead of failing to link.
 
-1. `generate_font_subset.py` — extracts unique codepoints from translation headers
+The font generation pipeline (in this library's `tools/` directory):
+
+1. `generate_font_subset.py` — extracts unique codepoints from translation headers into a `*_subset.map`
 2. `otf2bdf` (system tool) — converts TTF/TTC to BDF format
 3. `bdfconv` (from u8g2 project) — generates U8g2 binary font arrays from BDF + subset map
 `https://github.com/olikraus/u8g2/wiki/u8g2fontformat`
 
+`generate_u8g2_font.py` is the alternative to steps 2-3: it renders the glyphs listed in a `*_subset.map` straight from a system TTF/TTC with Pillow, so no `otf2bdf` / `bdfconv` install is needed.
+
+Both scripts still carry hardcoded paths from the pre-`ungula/` folder layout (`ICB/i18n`, `src/i18n_engine/fonts`), so fix the paths at the top of the script before running either one.
+
+The generated headers `#include <pgmspace.h>`. Arduino builds get that from the core; pure ESP-IDF builds get the shim at `src/pgmspace.h`, which only resolves if `lib_i18n/src` is on the include path.
+
 ## Tests
 
-The library includes a Google Test suite that covers registration, string lookup, language switching, built-in names, vertical offset, and CJK content handling.
+The library includes a Google Test suite that covers registration, string lookup, language switching, built-in names, vertical offset, and CJK content handling. The test build defines `I18N_TESTING`, which exposes `ungula::i18n::reset()` so each test starts from a clean registration table. Production builds never define it.
 
 ### Prerequisites
 
@@ -312,7 +329,7 @@ Thanks to Claude and ChatGPT for helping on generating this documentation.
 
 ## License
 
-MIT License — see [LICENSE](license.txt) file.
+MIT License — see [LICENSE](LICENSE) file.
 
 ---
 

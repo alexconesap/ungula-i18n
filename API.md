@@ -34,7 +34,7 @@ caller-owned `const char*` arrays.
 
 - Use only symbols and include paths documented in this file; do not infer extra public API from implementation files.
 - Prefer the use-case patterns here over ad-hoc rewrites; keep dependency wiring and lifecycle order identical unless the task explicitly changes API design.
-- Treat headers under `detail/`, `platform/`, and `platforms/` as internal unless this document calls them out as public.
+- `src/ungula/i18n/fonts/*.h` are data blobs for the host renderer, not API. `src/pgmspace.h` is a build shim (see below).
 - If required behavior is missing from the documented API, report the gap explicitly instead of inventing new public symbols.
 
 
@@ -135,7 +135,7 @@ subset fonts (CJK, Vietnamese) on the same screen and the baselines differ.
 
 ## API
 
-All symbols live in namespace `i18n`. Single public header is
+All symbols live in namespace `ungula::i18n`. Single public header is
 `ungula/i18n.h`, which includes `ungula/i18n/i18n.h`.
 
 ### Public types
@@ -163,7 +163,7 @@ returns `0xFF` once this is reached.
 
 ### Public functions
 
-All declarations from `src/i18n_engine/i18n.h`:
+All declarations from `src/ungula/i18n/i18n.h`:
 
 #### `const char* ungula::i18n::langName(Lang lang)`
 
@@ -180,9 +180,11 @@ All declarations from `src/i18n_engine/i18n.h`:
   and per-language Y-offset. Does not copy the table.
 - **Parameters**:
   - `lang` - identifies which catalog entry (used for display name lookup).
+    Must be a real variant (`English`..`Vietnamese`). **Not validated** -
+    see failure behavior.
   - `strings` - caller-owned array of `const char*`, length `stringCount`.
     Lifetime must outlive any call into the library (place it in
-    `static const` / PROGMEM).
+    `static const` / PROGMEM). **Not null-checked.**
   - `stringCount` - number of entries in `strings`. All registered tables
     should agree on this count and on enum-to-index mapping.
   - `yOffset` - vertical pixel correction for the host's text renderer.
@@ -192,8 +194,15 @@ All declarations from `src/i18n_engine/i18n.h`:
 - **Side effects**: writes into a file-static array.
 - **Failure behavior**: silently rejects beyond `MAX_LANGUAGES` (signaled
   only by the `0xFF` return). No bounds check on `stringCount` itself.
+  Registering `Lang::LANG_COUNT` or a cast of an unknown integer is
+  accepted, and a later `languageName()` on that slot then reads past the
+  built-in name table and can hand back a garbage or null pointer. Same
+  for a null `strings`: `str()` will dereference it. Validate both on the
+  host side.
 - **Usage notes**: registration order defines the `langIndex` used by
-  `setLanguage`, `languageName`, etc. Call before `setLanguage`.
+  `setLanguage`, `languageName`, etc. Call before `setLanguage`. The same
+  `Lang` may be registered twice (no duplicate check) - the UI would then
+  show the same display name on two rows.
 
 #### `const char* ungula::i18n::str(uint16_t index)`
 
@@ -228,6 +237,9 @@ All declarations from `src/i18n_engine/i18n.h`:
 - **Purpose**: built-in display name for a registered language, looked up
   by registration index.
 - **Returns**: static string, or `"?"` if `langIndex >= languageCount()`.
+- **Failure behavior**: non-null only while every registration used a real
+  `Lang` variant. The `Lang` stored by `addLanguage` indexes the name table
+  unchecked.
 
 #### `ungula::i18n::Lang ungula::i18n::languageId(uint8_t langIndex)`
 
@@ -287,14 +299,24 @@ Out-of-order use is benign: calling `str` before any `addLanguage` returns
   CJK/diacritic scripts (see `i18n.cpp`). The host renderer must support
   those bytes - either by drawing through a Unicode-aware font (U8g2 with
   a glyph subset) or by avoiding non-ASCII names.
-- Pre-generated U8g2 subset fonts ship in `src/i18n_engine/fonts/`:
+- Pre-generated U8g2 subset fonts ship in `src/ungula/i18n/fonts/`:
   `font_cn_{14,20,28}.h`, `font_es_{14,20,28}.h`, `font_ja_{14,20,28}.h`,
   `font_vi_{14,20,28}.h`. They are `const uint8_t ... PROGMEM` arrays;
   including a font header pulls a U8g2-format byte array into flash. The
   library code itself does not reference the fonts - the host wires them
   into U8g2 / `lib_display`.
-- No Korean / French / German fonts ship despite some host projects naming
-  those languages; the `Lang` enum does not include them.
+- Each font array is `const` at namespace scope, so it has internal
+  linkage: include a given font header from exactly ONE translation unit.
+  Two includes mean two copies in flash (up to ~16 KB each), not a
+  duplicate-symbol error, so nothing warns you.
+- `src/pgmspace.h` is a build shim, not API. Font headers do
+  `#include <pgmspace.h>`; on Arduino it defers to the core header via
+  `#include_next`, on pure ESP-IDF it supplies the `PROGMEM` / `pgm_read_*`
+  no-ops. It only resolves when `lib_i18n/src` is on the include path.
+  It deliberately omits `memcpy_P` / `str*_P` (clashes with LovyanGFX) -
+  use plain `memcpy` / `strlen` on ESP32.
+- No Korean / French / German fonts ship; the `Lang` enum does not include
+  those languages either.
 
 ## Threading / timing
 
@@ -311,27 +333,22 @@ Out-of-order use is benign: calling `str` before any `addLanguage` returns
   exported.
 - `ungula::i18n::reset()` - exists only when the TU is built with `I18N_TESTING`
   defined. For unit tests; do not call from production code.
-- `src/i18n_engine/fonts/*.h` - data blobs consumed by the host's GFX
+- `src/ungula/i18n/fonts/*.h` - data blobs consumed by the host's GFX
   layer, not by the library. Including them is optional.
 - `tools/` (`generate_u8g2_font.py`, `generate_font_subset.py`,
   `*_subset.map`) - build-time utilities for regenerating subset fonts.
   Not runtime API.
 
-## Recommended improvements (proposed, not yet implemented)
+## Known gaps
 
-The current API is small and stable enough to keep as is. Two shallow
-edges worth flagging:
+Real behavior of the shipped API. Guard against these host-side; do not
+invent library symbols to fix them.
 
-1. `addLanguage` does not validate that `stringCount` matches across
-   registrations. A `bool ungula::i18n::tablesConsistent()` (or a strict mode
-   that fails registration if counts differ) would catch the most common
-   bug at boot.
-2. `languageId` returns `Lang::English` on out-of-range index, which is
-   indistinguishable from a legitimately registered English. A second
-   form returning `bool ungula::i18n::tryLanguageId(uint8_t, Lang&)` would let
-   callers tell "no such index" from "English".
-
-These are proposals only. Do not call them in code today.
+- `addLanguage` validates neither `lang`, `strings`, nor `stringCount`
+  consistency across registrations.
+- `languageId` returns `Lang::English` both for a registered English and
+  for an out-of-range index. Check `languageCount()` first.
+- `str` falls back to `"?"`, never to another language's table.
 
 ---
 
@@ -346,6 +363,9 @@ These are proposals only. Do not call them in code today.
   tables silently produce `"?"` on switch.
 - Never assume more than `MAX_LANGUAGES` (5) registrations succeed; check
   the return value of `addLanguage` if registering dynamically.
+- Only ever pass a real `Lang` variant to `addLanguage` - never
+  `Lang::LANG_COUNT`, never a cast from a stored integer that was not
+  range-checked first.
 - Do not read or write `s_languages`, `s_activeLang`, `s_langNames`, or
   any symbol from `i18n.cpp` directly.
 - Do not call `ungula::i18n::reset()` outside a `I18N_TESTING` build.
