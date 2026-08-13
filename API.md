@@ -32,10 +32,17 @@ caller-owned `const char*` arrays.
 
 ### LLM rules
 
-- Use only symbols and include paths documented in this file; do not infer extra public API from implementation files.
+- Use only symbols and include paths documented in this file; do not infer extra public API from implementation files. The single include is `<ungula/i18n.h>`.
 - Prefer the use-case patterns here over ad-hoc rewrites; keep dependency wiring and lifecycle order identical unless the task explicitly changes API design.
 - `src/ungula/i18n/fonts/*.h` are data blobs for the host renderer, not API. `src/pgmspace.h` is a build shim (see below).
-- If required behavior is missing from the documented API, report the gap explicitly instead of inventing new public symbols.
+- If required behavior is missing from the documented API, report the gap explicitly instead of inventing new public symbols. See "Known gaps".
+- Wrap `ungula::i18n::str(uint16_t)` in a host-side inline that takes the host's own `enum class StringId` - do not scatter raw casts.
+- Always size every translation array to the host's `STRING_COUNT` and pass that same value as `stringCount` to `addLanguage`. Asymmetric tables silently produce `"?"` on switch.
+- Never assume more than `MAX_LANGUAGES` (5) registrations succeed; check the return value of `addLanguage` if registering dynamically.
+- Only ever pass a real `Lang` variant to `addLanguage` - never `Lang::LANG_COUNT`, never a cast from a stored integer that was not range-checked first.
+- Do not read or write `s_languages`, `s_activeLang`, `s_langNames`, or any symbol from `i18n.cpp` directly, and do not call `ungula::i18n::reset()` outside an `I18N_TESTING` build.
+- The library is single-threaded; do not call any function from an ISR or a second RTOS task.
+- Treat all returned `const char*` as borrowed, immutable, and valid for the lifetime of the registered table. Do not free them.
 
 
 ## Usage
@@ -349,27 +356,3 @@ invent library symbols to fix them.
 - `languageId` returns `Lang::English` both for a registered English and
   for an out-of-range index. Check `languageCount()` first.
 - `str` falls back to `"?"`, never to another language's table.
-
----
-
-## LLM usage rules
-
-- Use only the documented public API. The single include is
-  `<ungula/i18n.h>`.
-- Wrap `ungula::i18n::str(uint16_t)` in a host-side inline that takes the host's
-  own `enum class StringId` - do not scatter raw casts.
-- Always size every translation array to the host's `STRING_COUNT` and
-  pass that same value as `stringCount` to `addLanguage`. Asymmetric
-  tables silently produce `"?"` on switch.
-- Never assume more than `MAX_LANGUAGES` (5) registrations succeed; check
-  the return value of `addLanguage` if registering dynamically.
-- Only ever pass a real `Lang` variant to `addLanguage` - never
-  `Lang::LANG_COUNT`, never a cast from a stored integer that was not
-  range-checked first.
-- Do not read or write `s_languages`, `s_activeLang`, `s_langNames`, or
-  any symbol from `i18n.cpp` directly.
-- Do not call `ungula::i18n::reset()` outside a `I18N_TESTING` build.
-- The library is single-threaded; do not call any function from an ISR or
-  a second RTOS task.
-- Treat all returned `const char*` as borrowed, immutable, and valid for
-  the lifetime of the registered table. Do not free them.
